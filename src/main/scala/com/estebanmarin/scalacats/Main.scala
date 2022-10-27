@@ -1,7 +1,9 @@
 package com.estebanmarin
 package scalacats
 
-import cats.kernel.Order
+import cats.*
+import cats.syntax.*
+import cats.implicits.*
 
 @main def Main(args: String*): Unit =
   println("─" * 100)
@@ -38,10 +40,10 @@ import cats.kernel.Order
   given Combinator[Int] with
     override def combine(x: Int, y: Int): Int = x + y
 
-  case class Person(name: String):
+  case class Person(name: String, age: Int):
     def greet: String = s"Hi, my $name, nice to meet you"
 
-  extension (string: String) def greetWithPerson: String = Person(string).greet
+  extension (string: String) def greetWithPerson: String = Person(string, 39).greet
 
   val listIntTest = List(1, 2, 3, 4, 5, 6)
   val listStringtes = "testString".toList
@@ -56,17 +58,86 @@ import cats.kernel.Order
   case class Leaf[A](value: A) extends Tree[A]
   case class Branch[A](left: Tree[A], right: Tree[A]) extends Tree[A]
 
-  extension [A](tree: Tree[A]) 
-    def map[B](f: A => B): Tree[B] = 
-      tree match
-        case Leaf(value) => ???
-        case Branch(left, right) => ???
-      
+  extension [A](tree: Tree[A])
+    def map[B](f: A => B): Tree[B] = tree match
+      case Leaf(value) => Leaf(f(value))
+      case Branch(left, right) => Branch(left.map(f), right.map(f))
 
-  println("hello world")
-  println(test.toString())
-  println(s"${"Esteban".greetWithPerson}")
-  println(testListOption.combineOptionAll)
-  println(listStringtes.combineAll)
+    def +(that: Tree[A]) = ???
 
+    def combineAllTree(using Combinator[A]): A = tree match
+      case Leaf(value) => value
+      case Branch(left, right) =>
+        summon[Combinator[A]].combine(left.combineAllTree, right.combineAllTree)
+
+  extension (tree: Tree[Int])
+    def sum: Int = tree match
+      case Leaf(value) => value
+      case Branch(left, right) => left.sum + right.sum
+
+  val aTree = Branch(Branch(Leaf(3), Leaf(1)), Leaf(10))
+
+  def methodWithContextArg(nonContextArg: Int)(using nonContextArg2: String): String = ???
+  val functionWithContextArgument: Int => String ?=> String = methodWithContextArg
+
+  class Animal
+  class Dog(name: String) extends Animal
+  // List is Covariant List[Animal]
+  val lassie = new Dog("L")
+  val lassie2 = new Dog("L2")
+  val lassie3 = new Dog("L3")
+  val list: List[Animal] = List(lassie, lassie2, lassie3)
+  // covariant
+  class MyList[+A]
+  val aListofAnimals: MyList[Animal] = new MyList[Dog]
+
+  trait Vet[-A]:
+    def heal(animal: A): Boolean
+
+  val myVet: Vet[Dog] = new Vet[Animal]:
+    override def heal(animal: Animal): Boolean = true
+
+  // def reducteInts[A: Semigroup](l: List[A]) = l.reduce(summon[Semigroup[A]].combine)
+  def reducteInts[A: Semigroup](l: List[A]) = l.reduce(_ |+| _)
+
+  extension [A: Monoid](l: List[A])
+    // def sumAll: A = l.fold(summon[Monoid[A]].empty)(summon[Monoid[A]].combine)
+    def sumAll: A = l.fold(summon[Monoid[A]].empty)(_ |+| _)
+
+  // println(s" [Monoid] ${List(1, 2, 3, 4, 5, 6).sumAll}")
+
+  given Monoid[Person] with
+    override def combine(x: Person, y: Person): Person =
+      Person(s"${x.name} + ${y.name}", x.age + y.age)
+    override def empty: Person = Person("", 0)
+
+  // println(
+  //   s"Monoid person => ${List(Person("E", 12), Person("S", 23), Person("T", 76), Person("E", 36)).sumAll}"
+  // )
+
+  //  ifit produces a value than is covariant ie lists
+  // if it consumes a value then is contravariant
+  // othervise invant
+
+  // println("hello world")
+  // println(test.toString())
+  // println(s"${"Esteban".greetWithPerson}")
+  // println(testListOption.combineOptionAll)
+  // println(listStringtes.combineAll)
+  // println(aTree.map(_ + 1))
+  // println(aTree.combineAllTree)
+
+  type PhoneBook = Map[String, Int]
+
+  val listPhoneBooks = List(
+    Map("Alice" -> 235, "Bob" -> 64),
+    Map("Camilo" -> 86, "Adriana" -> 98),
+    Map("Carlos" -> 87, "Diego" -> 89),
+  )
+
+  given Monoid[PhoneBook] with
+    override def combine(x: PhoneBook, y: PhoneBook): PhoneBook = x ++ y
+    override def empty: PhoneBook = Map.empty
+
+  println(listPhoneBooks.sumAll)
   println("─" * 100)
