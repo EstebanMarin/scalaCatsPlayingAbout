@@ -4,6 +4,9 @@ package scalacats
 import cats.*
 import cats.syntax.*
 import cats.implicits.*
+import cats.data.Func
+import scala.util.Success
+import scala.util.Try
 
 @main def Main(args: String*): Unit =
   println("─" * 100)
@@ -139,5 +142,33 @@ import cats.implicits.*
     override def combine(x: PhoneBook, y: PhoneBook): PhoneBook = x ++ y
     override def empty: PhoneBook = Map.empty
 
-  println(listPhoneBooks.sumAll)
+  // println(listPhoneBooks.sumAll)
+
+  case class ShoppingCart(items: List[String], total: Double)
+  given Monoid[ShoppingCart] with
+    override def combine(x: ShoppingCart, y: ShoppingCart): ShoppingCart =
+      ShoppingCart(x.items |+| y.items, y.total |+| x.total)
+    override def empty: ShoppingCart = ShoppingCart(List.empty, 0)
+
+  def checkout(shoppingCarts: List[ShoppingCart]): ShoppingCart =
+    shoppingCarts.sumAll
+
+  def do10x[F[_]: Functor](container: F[Int]): F[Int] =
+    container.map(_ * 10)
+
+  def do10Shopping[F[_]: Functor](c: F[ShoppingCart]): F[ShoppingCart] =
+    c.map(s => s.copy(total = s.total * 10))
+
+  extension [F[_]: Functor](c: F[ShoppingCart])
+    def do10Times = c.map(s => s.copy(total = s.total * 10))
+  
+  println(do10x(List(1, 2, 3)))
+  val listShoppingCarts = List(ShoppingCart(List("T", "S"), 10))
+  val optionShoppingCarts = Option(ShoppingCart(List("T", "S"), 10))
+  val tryShoppingCarts = Try(ShoppingCart(List("T", "S"), 10))
+  
+  println(listShoppingCarts.do10Times)
+  println(optionShoppingCarts.do10Times)
+  println(tryShoppingCarts.do10Times)
+
   println("─" * 100)
