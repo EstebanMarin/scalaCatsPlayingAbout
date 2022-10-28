@@ -18,5 +18,5 @@ import cats.data.EitherT
 val listOfEither: EitherT[List, String, Int] =
   EitherT(List(Left("Something w"), Right(43), Right(2)))
 
-@main def more(args: String*): Unit =
+def more(args: String*): Unit =
   println(listOfTuples.value)
