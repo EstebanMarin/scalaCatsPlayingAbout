@@ -38,5 +38,9 @@ val increase = aWriter.map(_ + 1)
 val left = aWriter.mapWritten(_ :+ "another")
 val mapBoth = aWriter.bimap(_ :+ "bimap", _ + 1)
 
+import cats.Semigroupal
+val aTupledOption: Option[(Int, String)] = Semigroupal[Option].product(Some(1234), Some("a string"))
+val aTupledList: List[(Int, String)] = Semigroupal[List].product(List(1, 2), List("a", "b"))
+
 @main def more(args: String*): Unit =
-  println("Hello")
+  println(aTupledList)
