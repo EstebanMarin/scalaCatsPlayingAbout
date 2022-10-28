@@ -8,7 +8,7 @@ import cats.data.Func
 import scala.util.Success
 import scala.util.Try
 
-@main def Main(args: String*): Unit =
+def Main(args: String*): Unit =
   println("─" * 100)
 
   given optionOrdering[A: Ordering]: Ordering[Option[A]] with
@@ -93,6 +93,8 @@ import scala.util.Try
   // covariant
   class MyList[+A]
   val aListofAnimals: MyList[Animal] = new MyList[Dog]
+  given Functor[MyList] with
+    override def map[A, B](fa: MyList[A])(f: A => B): MyList[B] = ???
 
   trait Vet[-A]:
     def heal(animal: A): Boolean
@@ -161,14 +163,24 @@ import scala.util.Try
 
   extension [F[_]: Functor](c: F[ShoppingCart])
     def do10Times = c.map(s => s.copy(total = s.total * 10))
-  
-  println(do10x(List(1, 2, 3)))
+
+  // println(do10x(List(1, 2, 3)))
   val listShoppingCarts = List(ShoppingCart(List("T", "S"), 10))
   val optionShoppingCarts = Option(ShoppingCart(List("T", "S"), 10))
   val tryShoppingCarts = Try(ShoppingCart(List("T", "S"), 10))
-  
-  println(listShoppingCarts.do10Times)
-  println(optionShoppingCarts.do10Times)
-  println(tryShoppingCarts.do10Times)
+
+  // println(listShoppingCarts.do10Times)
+  // println(optionShoppingCarts.do10Times)
+  // println(tryShoppingCarts.do10Times)
+
+  given Functor[Tree] with
+    override def map[A, B](fa: Tree[A])(f: A => B): Tree[B] =
+      fa match
+        case Leaf(value) => Leaf(f(value))
+        case Branch(left, right) => Branch(left.map(f), right.map(f))
+
+  aTree.map(_ + 1)
+  Functor[Tree].map(aTree)(_ + 1)
+
 
   println("─" * 100)
